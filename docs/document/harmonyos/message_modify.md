@@ -46,25 +46,52 @@
 **一条消息默认最多可修改 10 次。**
 
 ```typescript
-let newMessageBody = new TextMessageBody("new content");
-
-let newExt = new Map<string, MessageExtType>();
-newExt.set("conversationId", 123);
-newExt.set("fromType", "1");
-newExt.set("isSender", true);
-newExt.set('userInfo', {
-  nickname: 'Nickname',
-  avatarUrl: 'https://www.easemob.com/example.png',
+// 文本消息
+let textBody = new TextMessageBody('new content');
+// 如果想完全替换 ext，可以 new 一个 Map 出来
+let ext: Map<string, MessageExtType> = message.ext();
+ext.set('newkey', {
+  nickname: '张三',
   gender: Gender.MALE
-} as UserInfo);
-// 如果不想修改消息内容(body)，newMessageBody 参数可以传入 null
-// 如果不想修改原有消息的 ext, newExt 参数可以不传或者传 null。如果想清除原有的 ext, newExt 参数可以传一个空的 Map。
-// newMessageBody 和 newExt 不能不传或者同时都为 null
-ChatClient.getInstance().chatManager().modifyMessage(msgId, newMessageBody, newExt).then((result) => {
+} as UserInfo)
+
+ChatClient.getInstance().chatManager()?.modifyMessage(this.messageId, textBody, ext)
+  .then((msg: ChatMessage) => {
     // 修改成功
-}).catch((error) => {
+  })
+  .catch((e: ChatError) => {
     // 修改失败
-});
+  })
+
+
+// 自定义消息
+let customBody = new CustomMessageBody('new action');
+let newExt: Map<string, MessageExtType> = new Map();
+newExt.set('newkey1', 'newkey1');
+newExt.set('newkey2', 123);
+ChatClient.getInstance().chatManager()?.modifyMessage(this.messageId, customBody, newExt)
+  .then((msg: ChatMessage) => {
+    // 修改成功
+  })
+  .catch((e: ChatError) => {
+    // 修改失败
+  })
+
+// 其他类型消息（除了命令消息）
+let newExt: Map<string, MessageExtType> = new Map();
+newExt.set('newkey1', false);
+newExt.set('newkey2', {
+  nickname: 'nickname',
+  gender: Gender.UNKNOWN
+} as UserInfo)
+ChatClient.getInstance().chatManager()?.modifyMessage(this.messageId, null, newExt)
+  .then((msg: ChatMessage) => {
+    // 修改成功
+  })
+  .catch((e: ChatError) => {
+    // 修改失败
+  })
+
 ```
 
 消息修改后，消息的接收方会收到 `ChatMessageListener#onMessageContentChanged` 事件，该事件中会携带修改后的消息对象、最新一次修改消息的用户以及消息的最新修改时间。对于群组和聊天室会话，除了修改消息的用户，群组/聊天室内的其他成员均会收到该事件。
@@ -78,15 +105,15 @@ ChatClient.getInstance().chatManager().addMessageListener({
     onMessageReceived: (messages: ChatMessage[]) => {},
     
     onMessageContentChanged: (messageModified: ChatMessage, operatorId: string, operationTime: number) => {
-              let operationCount = messageModified.getBody()?.operationCount();
-              // operatorId、operationTime也可通过以下方式来获取,数据与上述行参保持一致
-              let id = messageModified.getBody()?.operatorId();
-              let time = messageModified.getBody()?.operationTime();
-              // 消息修改后的扩展字段，可通过以下方式获取
-              let newExt = messageModified.ext();
-              newExt.forEach((value, key) => {
-                ChatLog.d("onMessageContentChanged onSuccess key:" + key + " value:" + value);
-              })
+        let operationCount = messageModified.getBody()?.operationCount();
+        // operatorId、operationTime也可通过以下方式来获取,数据与上述行参保持一致
+        let id = messageModified.getBody()?.operatorId();
+        let time = messageModified.getBody()?.operationTime();
+        // 消息修改后的扩展字段，可通过以下方式获取
+        let newExt = messageModified.ext();
+        newExt.forEach((value, key) => {
+          ChatLog.d("onMessageContentChanged onSuccess key:" + key + " value:" + value);
+        })
     }
 });
 ```
