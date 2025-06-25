@@ -28,7 +28,7 @@
 
 4. 点击 **Finish**。根据屏幕提示，安装所需插件。
 
-上述步骤使用 **DevEco Studio 5.0.1 Release（5.0.5.315）** 示例。
+上述步骤使用 **DevEco Studio 5.1.0 Release（5.1.0.828）** 示例。
 
 5. 在项目中引入 SDK。
 
@@ -105,21 +105,24 @@ ohpm install @easemob/chatuikit
 
 本节介绍如何通过单群聊 UIKit 实现发送第一条单聊消息。
 
+为了方便快速体验，你可以在[环信即时通讯云控制台](https://console.easemob.com/user/login)的**应用概览** > **用户认证**页面创建用户并查看用户 token。**用户认证**页面中的用户仅用于快速体验或调试目的。
+
+在开发环境中，你需要在环信控制台[创建 IM 用户](/product/enable_and_configure_IM.html#创建-im-用户)，从你的 App Server 获取用户 token，详见[使用环信用户 token 鉴权](/product/easemob_user_token.html) 。
+
 ### 创建快速开始页面及实现代码逻辑
 
 1. 打开 `entry/src/main/ets/pages/Index.ets` 文件，并替换为如下内容：
 
 ```typescript
 import { ChatPageParams, ChatUIKitClient, ChatClient, ChatError, ChatOptions, ConversationType } from '@easemob/chatuikit';
-import { promptAction } from '@kit.ArkUI';
 
 @Entry
 @Component
 struct Index {
   pathStack: NavPathStack = new NavPathStack();
-  private appKey: string = [项目的AppKey]; // 将[项目的AppKey]替换为项目的 App Key 字符串
+  private appKey: string = ''; // 将[项目的AppKey]替换为项目的 App Key 字符串
   private userId: string = '';
-  private password: string = '';
+  private token: string = '';
   private peerId: string = '';
 
   private initSDK() {
@@ -128,34 +131,34 @@ struct Index {
     });
     options.setAutoLogin(false);
     let client = ChatClient.getInstance();
-    client.init(getContext(), options);
+    client.init(this.getUIContext().getHostContext(), options);
     ChatUIKitClient.init(client);
   }
 
   private login() {
-    if (!this.userId || !this.password) {
-      promptAction.showToast({message: "UserId or password cannot be empty!"});
+    if (!this.userId || !this.token) {
+      this.getUIContext().getPromptAction().showToast({message: "UserId or token cannot be empty!"});
       return;
     }
-    ChatUIKitClient.loginWithPassword(this.userId, this.password)
+    ChatUIKitClient.login(this.userId, this.token)
       .then(() => {
-        promptAction.showToast({message: "Login successful!"});
+        this.getUIContext().getPromptAction().showToast({message: "Login successful!"});
       })
       .catch((e: ChatError) => {
-        promptAction.showToast({message: "Login failed: "+e.description});
+        this.getUIContext().getPromptAction().showToast({message: "Login failed: "+e.description});
       })
   }
 
   private logout() {
     ChatUIKitClient.logout(false)
       .then(() => {
-        promptAction.showToast({message: "Logout successful!"});
+        this.getUIContext().getPromptAction().showToast({message: "Logout successful!"});
       })
   }
 
   private startChat() {
     if (!this.peerId) {
-      promptAction.showToast({message: "Peer id cannot be empty!"});
+      this.getUIContext().getPromptAction().showToast({message: "Peer id cannot be empty!"});
       return;
     }
     this.pathStack.pushPath({name: 'ChatPage', param: {
@@ -175,10 +178,9 @@ struct Index {
           .commonStyle()
           .onChange(value => this.userId = value)
 
-        TextInput({ placeholder: 'Password' })
+        TextInput({ placeholder: 'Token', text: this.token })
           .commonStyle()
-          .type(InputType.Password)
-          .onChange(value => this.password = value)
+          .onChange(value => this.token = value)
 
         Button('Login')
           .commonStyle()
